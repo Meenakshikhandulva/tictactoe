@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic Tac Toe</title>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; background-color: #f4f4f4; }
-        h1 { color: #333; }
+        body { text-align: center; font-family: Arial, sans-serif; background-color: #222; color: #fff; }
+        h1 { color: #ffcc00; }
         .board { 
             display: grid; 
             grid-template-columns: repeat(3, 120px); 
@@ -20,29 +20,39 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 3px solid #333;
+            border: 3px solid #ffcc00;
             font-size: 2.5em;
             cursor: pointer;
-            background-color: white;
+            background-color: #333;
             transition: background 0.3s ease;
         }
-        .cell:hover:not(.taken) { background-color: #ddd; }
+        .cell:hover:not(.taken) { background-color: #555; }
         .cell.taken { cursor: not-allowed; }
-        #status { font-size: 1.5em; margin: 20px 0; }
+        #status { font-size: 1.5em; margin: 20px 0; color: #ffcc00; }
         button {
             padding: 10px 20px;
             font-size: 1.2em;
             border: none;
-            background: #333;
-            color: white;
+            background: #ffcc00;
+            color: #222;
             cursor: pointer;
             transition: background 0.3s ease;
+            margin-top: 20px;
         }
-        button:hover { background: #555; }
+        button:hover { background: #ffaa00; }
+        .highlight { background-color: #28a745 !important; color: white !important; }
+        .scoreboard {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
     <h1>Tic Tac Toe</h1>
+    <div class="scoreboard">
+        <span>Player: <span id="player-score">0</span></span> | 
+        <span>Computer: <span id="computer-score">0</span></span>
+    </div>
     <div class="board" id="board"></div>
     <h2 id="status"></h2>
     <button onclick="resetGame()">Restart Game</button>
@@ -50,8 +60,11 @@
     <script>
         let board = ["", "", "", "", "", "", "", "", ""];
         let currentPlayer = "X";
+        let playerScore = 0, computerScore = 0;
         const boardElement = document.getElementById("board");
         const statusElement = document.getElementById("status");
+        const playerScoreElement = document.getElementById("player-score");
+        const computerScoreElement = document.getElementById("computer-score");
 
         function createBoard() {
             boardElement.innerHTML = "";
@@ -71,7 +84,13 @@
                 [0, 3, 6], [1, 4, 7], [2, 5, 8],
                 [0, 4, 8], [2, 4, 6]
             ];
-            return winPatterns.some(pattern => pattern.every(i => board[i] === player));
+            for (let pattern of winPatterns) {
+                if (pattern.every(i => board[i] === player)) {
+                    pattern.forEach(i => document.getElementsByClassName("cell")[i].classList.add("highlight"));
+                    return true;
+                }
+            }
+            return false;
         }
 
         function checkDraw() {
@@ -80,7 +99,6 @@
 
         function minimax(newBoard, player) {
             let availableMoves = newBoard.map((cell, index) => cell === "" ? index : null).filter(i => i !== null);
-
             if (checkWin("O")) return { score: 1 };
             if (checkWin("X")) return { score: -1 };
             if (availableMoves.length === 0) return { score: 0 };
@@ -101,32 +119,19 @@
                 moves.push(move);
             }
 
-            let bestMove;
-            if (player === "O") {
-                let bestScore = -Infinity;
-                for (let move of moves) {
-                    if (move.score > bestScore) {
-                        bestScore = move.score;
-                        bestMove = move;
-                    }
-                }
-            } else {
-                let bestScore = Infinity;
-                for (let move of moves) {
-                    if (move.score < bestScore) {
-                        bestScore = move.score;
-                        bestMove = move;
-                    }
-                }
-            }
-            return bestMove;
+            return moves.reduce((best, move) => (player === "O" ? move.score > best.score : move.score < best.score) ? move : best);
         }
 
         function computerMove() {
             let bestSpot = minimax(board, "O").index;
             board[bestSpot] = "O";
             createBoard();
-            if (checkWin("O")) return statusElement.textContent = "Computer Wins!";
+            if (checkWin("O")) {
+                statusElement.textContent = "Computer Wins!";
+                computerScore++;
+                computerScoreElement.textContent = computerScore;
+                return;
+            }
             if (checkDraw()) return statusElement.textContent = "It's a Draw!";
             currentPlayer = "X";
         }
@@ -135,7 +140,12 @@
             if (board[index] === "" && currentPlayer === "X") {
                 board[index] = "X";
                 createBoard();
-                if (checkWin("X")) return statusElement.textContent = "You Win!";
+                if (checkWin("X")) {
+                    statusElement.textContent = "You Win!";
+                    playerScore++;
+                    playerScoreElement.textContent = playerScore;
+                    return;
+                }
                 if (checkDraw()) return statusElement.textContent = "It's a Draw!";
                 currentPlayer = "O";
                 setTimeout(computerMove, 500);
