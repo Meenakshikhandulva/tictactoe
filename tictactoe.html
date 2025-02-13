@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; background-color: #f4f4f4; }
+        h1 { color: #333; }
+        .board { 
+            display: grid; 
+            grid-template-columns: repeat(3, 120px); 
+            grid-gap: 10px; 
+            justify-content: center; 
+            margin-top: 20px;
+        }
+        .cell {
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #333;
+            font-size: 2.5em;
+            cursor: pointer;
+            background-color: white;
+            transition: background 0.3s ease;
+        }
+        .cell:hover:not(.taken) { background-color: #ddd; }
+        .cell.taken { cursor: not-allowed; }
+        #status { font-size: 1.5em; margin: 20px 0; }
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border: none;
+            background: #333;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover { background: #555; }
+    </style>
+</head>
+<body>
+    <h1>Tic Tac Toe</h1>
+    <div class="board" id="board"></div>
+    <h2 id="status"></h2>
+    <button onclick="resetGame()">Restart Game</button>
+
+    <script>
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = "X";
+        const boardElement = document.getElementById("board");
+        const statusElement = document.getElementById("status");
+
+        function createBoard() {
+            boardElement.innerHTML = "";
+            board.forEach((cell, index) => {
+                const cellElement = document.createElement("div");
+                cellElement.classList.add("cell");
+                cellElement.textContent = cell;
+                if (cell) cellElement.classList.add("taken");
+                cellElement.onclick = () => makeMove(index);
+                boardElement.appendChild(cellElement);
+            });
+        }
+
+        function checkWin(player) {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            return winPatterns.some(pattern => pattern.every(i => board[i] === player));
+        }
+
+        function checkDraw() {
+            return board.every(cell => cell !== "");
+        }
+
+        function minimax(newBoard, player) {
+            let availableMoves = newBoard.map((cell, index) => cell === "" ? index : null).filter(i => i !== null);
+
+            if (checkWin("O")) return { score: 1 };
+            if (checkWin("X")) return { score: -1 };
+            if (availableMoves.length === 0) return { score: 0 };
+
+            let moves = [];
+            for (let i of availableMoves) {
+                let move = {};
+                move.index = i;
+                newBoard[i] = player;
+                if (player === "O") {
+                    let result = minimax(newBoard, "X");
+                    move.score = result.score;
+                } else {
+                    let result = minimax(newBoard, "O");
+                    move.score = result.score;
+                }
+                newBoard[i] = "";
+                moves.push(move);
+            }
+
+            let bestMove;
+            if (player === "O") {
+                let bestScore = -Infinity;
+                for (let move of moves) {
+                    if (move.score > bestScore) {
+                        bestScore = move.score;
+                        bestMove = move;
+                    }
+                }
+            } else {
+                let bestScore = Infinity;
+                for (let move of moves) {
+                    if (move.score < bestScore) {
+                        bestScore = move.score;
+                        bestMove = move;
+                    }
+                }
+            }
+            return bestMove;
+        }
+
+        function computerMove() {
+            let bestSpot = minimax(board, "O").index;
+            board[bestSpot] = "O";
+            createBoard();
+            if (checkWin("O")) return statusElement.textContent = "Computer Wins!";
+            if (checkDraw()) return statusElement.textContent = "It's a Draw!";
+            currentPlayer = "X";
+        }
+
+        function makeMove(index) {
+            if (board[index] === "" && currentPlayer === "X") {
+                board[index] = "X";
+                createBoard();
+                if (checkWin("X")) return statusElement.textContent = "You Win!";
+                if (checkDraw()) return statusElement.textContent = "It's a Draw!";
+                currentPlayer = "O";
+                setTimeout(computerMove, 500);
+            }
+        }
+
+        function resetGame() {
+            board = ["", "", "", "", "", "", "", "", ""];
+            currentPlayer = "X";
+            statusElement.textContent = "";
+            createBoard();
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
